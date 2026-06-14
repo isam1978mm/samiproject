@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartWardrobe Offline</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>SmartWardrobe</h1>
+    <p>Offline outfit helper with WearWell Score</p>
+  </header>
+
+  <main class="layout">
+    <section class="card">
+      <h2>Add clothing item</h2>
+
+      <form id="item-form" class="form-grid">
+        <label>
+          Item name
+          <input id="item-name" required placeholder="Blue cotton shirt" />
+        </label>
+
+        <label>
+          Type
+          <select id="item-type" required></select>
+        </label>
+
+        <label>
+          Material
+          <select id="item-material" required></select>
+        </label>
+
+        <label>
+          Warmth
+          <select id="item-warmth" required></select>
+        </label>
+
+        <label>
+          Breathability
+          <select id="item-breathability" required></select>
+        </label>
+
+        <label>
+          Best activity
+          <select id="item-activity" required></select>
+        </label>
+
+        <label>
+          Best weather
+          <select id="item-weather" required></select>
+        </label>
+
+        <label>
+          Treatment info
+          <select id="item-treatment" required></select>
+        </label>
+
+        <label>
+          Evidence level
+          <select id="item-evidence" required></select>
+        </label>
+
+        <label>
+          Comfort note
+          <select id="item-comfort" required></select>
+        </label>
+
+        <button type="submit">Add item</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Choose today</h2>
+
+      <div class="form-grid">
+        <label>
+          Temperature
+          <select id="today-temperature"></select>
+        </label>
+
+        <label>
+          Rain
+          <select id="today-rain">
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </label>
+
+        <label>
+          Wind
+          <select id="today-wind">
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </label>
+
+        <label>
+          Activity
+          <select id="today-activity"></select>
+        </label>
+
+        <button id="recommend-button" type="button">Recommend outfit</button>
+      </div>
+
+      <div id="recommendation-output" class="result-box">
+        Add clothes, choose today’s conditions, then click recommend.
+      </div>
+    </section>
+
+    <section class="card wide">
+      <div class="section-title-row">
+        <h2>Wardrobe</h2>
+        <button id="reset-button" type="button" class="secondary-button">Reset sample data</button>
+      </div>
+      <div id="wardrobe-list" class="wardrobe-grid"></div>
+    </section>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/scoring.js"></script>
+  <script src="js/recommendation.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
