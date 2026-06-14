@@ -1,127 +1,754 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SmartWardrobe Offline</title>
-  <link rel="stylesheet" href="css/style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartWardrobe — WearWell</title>
+<style>
+  :root{
+    --paper:#F4F5F7;
+    --card:#FFFFFF;
+    --ink:#19212E;
+    --ink-soft:#5A6273;
+    --line:#DDE1E8;
+    --teal:#0F6E66;       /* brand / wearwell accent */
+    --teal-soft:#E2F0EE;
+    --good:#1B7F5B;       /* high confidence / good */
+    --warn:#B57814;       /* medium / possible concern */
+    --grey:#8A8F98;       /* low / missing info */
+    --bad:#B23A2E;        /* avoid flag */
+    --bad-soft:#FBE9E7;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
+  button{font-family:inherit;cursor:pointer}
+  input,select{font-family:inherit;font-size:14px}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 16px 80px}
+
+  /* Header */
+  header{border-bottom:1px solid var(--line);background:var(--card)}
+  .head-in{max-width:1000px;margin:0 auto;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .brand{display:flex;align-items:baseline;gap:10px}
+  .brand h1{font-size:20px;margin:0;letter-spacing:.5px}
+  .brand .mark{font-family:var(--mono);font-size:12px;letter-spacing:1px;color:var(--teal);border:1px solid var(--teal);padding:2px 7px;border-radius:4px;text-transform:uppercase}
+  .badge{font-family:var(--mono);font-size:11px;letter-spacing:.3px;padding:3px 8px;border-radius:4px;border:1px solid;white-space:nowrap}
+  .badge.ok{color:var(--good);border-color:var(--good);background:#eaf6f0}
+  .badge.warn{color:var(--warn);border-color:var(--warn);background:#fbf3e3}
+  .tabs{display:flex;gap:4px;background:var(--paper);padding:4px;border-radius:10px;border:1px solid var(--line)}
+  .tabs button{border:0;background:transparent;padding:8px 14px;border-radius:7px;font-size:13px;font-weight:600;letter-spacing:.3px;color:var(--ink-soft);text-transform:uppercase}
+  .tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+  h2.section{font-size:13px;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink-soft);margin:28px 0 12px;font-weight:700}
+  .muted{color:var(--ink-soft)}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+
+  /* Controls */
+  .row{display:flex;gap:14px;flex-wrap:wrap}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);font-weight:700}
+  .field input,.field select{padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;min-width:120px}
+  .field input:focus,.field select:focus{outline:2px solid var(--teal-soft);border-color:var(--teal)}
+  .btn{background:var(--teal);color:#fff;border:0;padding:10px 16px;border-radius:8px;font-weight:600;letter-spacing:.3px}
+  .btn:hover{filter:brightness(1.07)}
+  .btn.ghost{background:transparent;color:var(--teal);border:1px solid var(--teal)}
+  .btn.sm{padding:6px 11px;font-size:13px}
+  .btn.danger{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{border:0;background:#fff;padding:9px 12px;font-size:13px;color:var(--ink-soft);font-weight:600}
+  .seg button.on{background:var(--ink);color:#fff}
+
+  /* Outfit result */
+  .outfit{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  @media(max-width:720px){.outfit{grid-template-columns:1fr}}
+  .slot{border:1px dashed var(--line);border-radius:10px;padding:12px;display:flex;align-items:center;gap:12px;background:#fff}
+  .slot .ic{font-size:26px;width:40px;text-align:center}
+  .slot .slot-cat{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft);font-weight:700}
+  .slot .slot-name{font-weight:600}
+  .slot .slot-score{margin-left:auto;font-family:var(--mono);font-weight:700;font-size:15px}
+  .why{margin-top:14px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .why h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft)}
+  .why ul{margin:0;padding-left:18px}
+  .why li{margin:4px 0}
+  .avoided{color:var(--bad)}
+
+  /* Wardrobe grid: hangtag cards */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  .tag{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .tag.flagged{border-color:var(--bad);background:linear-gradient(#fff,var(--bad-soft))}
+  .tag .punch{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:34px;height:8px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+  .tag-top{display:flex;align-items:flex-start;gap:12px;margin-top:6px}
+  .tag .swatch{width:34px;height:34px;border-radius:8px;border:1px solid rgba(0,0,0,.12);flex:none}
+  .tag .ic{font-size:24px}
+  .tag-name{font-weight:700;font-size:16px;line-height:1.2}
+  .tag-meta{font-size:12px;color:var(--ink-soft);font-family:var(--mono)}
+  .score-line{display:flex;align-items:center;gap:12px}
+  .dial{font-family:var(--mono);font-size:30px;font-weight:700;line-height:1}
+  .dial small{font-size:11px;color:var(--ink-soft);font-weight:400}
+  .bars{flex:1;display:flex;flex-direction:column;gap:5px}
+  .bar{display:flex;align-items:center;gap:8px;font-size:11px}
+  .bar .blab{width:64px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+  .bar .track{flex:1;height:7px;background:var(--paper);border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+  .bar .fill{height:100%;border-radius:4px}
+  .bar .bval{width:26px;text-align:right;font-family:var(--mono);color:var(--ink-soft)}
+  .stamp{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:20px;border:1px solid}
+  .stamp.high{color:var(--good);border-color:var(--good);background:#eaf6f0}
+  .stamp.medium{color:var(--warn);border-color:var(--warn);background:#fbf3e3}
+  .stamp.low{color:var(--grey);border-color:var(--grey);background:#f1f2f4}
+  .stamp.avoid{color:var(--bad);border-color:var(--bad);background:var(--bad-soft)}
+  .tag-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px dashed var(--line);padding-top:10px}
+  .worn{font-family:var(--mono);font-size:12px;color:var(--ink-soft)}
+  .pill{font-size:11px;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:2px 9px;color:var(--ink-soft)}
+
+  /* Why panel inside detail */
+  details.evi{margin-top:4px}
+  details.evi summary{cursor:pointer;font-size:12px;color:var(--teal);font-weight:600}
+  .evi-list{font-size:12px;margin:8px 0 0;padding-left:16px;color:var(--ink-soft)}
+  .evi-list li{margin:3px 0}
+  .tier{font-weight:700}
+  .tier.confirmed{color:var(--bad)}
+  .tier.possible{color:var(--warn)}
+  .tier.low{color:var(--good)}
+  .tier.missing{color:var(--grey)}
+
+  /* Modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(20,25,35,.45);display:none;align-items:flex-start;justify-content:center;padding:30px 16px;overflow:auto;z-index:50}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--card);border-radius:16px;max-width:560px;width:100%;padding:22px}
+  .modal h3{margin:0 0 4px}
+  .mrow{margin-top:14px}
+  .mat-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .mat-row select{flex:1}
+  .mat-row input{width:70px}
+  .checks{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .chk{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer}
+  .chk input{margin:0}
+  .chk.on{border-color:var(--teal);background:var(--teal-soft)}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+  .empty{text-align:center;padding:50px 20px;color:var(--ink-soft)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft);margin-top:8px}
+  .sciencegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:8px}
+  .sci{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}
+  .sci b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--teal);margin-bottom:4px}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:60}
+  .toast.show{opacity:1}
+</style>
 </head>
 <body>
-  <header class="app-header">
-    <h1>SmartWardrobe</h1>
-    <p>Offline outfit helper with WearWell Score</p>
-  </header>
+<header>
+  <div class="head-in">
+    <div class="brand">
+      <h1>SmartWardrobe</h1>
+      <span class="mark">WearWell</span>
+      <span class="badge" id="storageBadge">checking storage…</span>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="today" class="on">Today</button>
+      <button data-tab="wardrobe">Wardrobe</button>
+      <button data-tab="you">You &amp; Data</button>
+    </nav>
+  </div>
+</header>
 
-  <main class="layout">
-    <section class="card">
-      <h2>Add clothing item</h2>
+<div class="wrap">
 
-      <form id="item-form" class="form-grid">
-        <label>
-          Item name
-          <input id="item-name" required placeholder="Blue cotton shirt" />
-        </label>
-
-        <label>
-          Type
-          <select id="item-type" required></select>
-        </label>
-
-        <label>
-          Material
-          <select id="item-material" required></select>
-        </label>
-
-        <label>
-          Warmth
-          <select id="item-warmth" required></select>
-        </label>
-
-        <label>
-          Breathability
-          <select id="item-breathability" required></select>
-        </label>
-
-        <label>
-          Best activity
-          <select id="item-activity" required></select>
-        </label>
-
-        <label>
-          Best weather
-          <select id="item-weather" required></select>
-        </label>
-
-        <label>
-          Treatment info
-          <select id="item-treatment" required></select>
-        </label>
-
-        <label>
-          Evidence level
-          <select id="item-evidence" required></select>
-        </label>
-
-        <label>
-          Comfort note
-          <select id="item-comfort" required></select>
-        </label>
-
-        <button type="submit">Add item</button>
-      </form>
-    </section>
-
-    <section class="card">
-      <h2>Choose today</h2>
-
-      <div class="form-grid">
-        <label>
-          Temperature
-          <select id="today-temperature"></select>
-        </label>
-
-        <label>
-          Rain
-          <select id="today-rain">
-            <option value="no">No</option>
-            <option value="yes">Yes</option>
+  <!-- ============ TODAY / RECOMMEND ============ -->
+  <section id="tab-today">
+    <h2 class="section">What should I wear?</h2>
+    <div class="panel">
+      <div class="row" style="align-items:flex-end">
+        <div class="field">
+          <label>Temperature</label>
+          <input type="number" id="temp" value="14" style="width:90px">
+        </div>
+        <div class="field">
+          <label>Units</label>
+          <div class="seg" id="unitSeg">
+            <button data-u="C" class="on">°C</button>
+            <button data-u="F">°F</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Conditions</label>
+          <select id="cond">
+            <option value="dry">Dry</option>
+            <option value="rain">Rain</option>
+            <option value="snow">Snow / cold wet</option>
+            <option value="wind">Windy</option>
+            <option value="humid">Hot &amp; humid</option>
           </select>
-        </label>
-
-        <label>
-          Wind
-          <select id="today-wind">
-            <option value="no">No</option>
-            <option value="yes">Yes</option>
+        </div>
+        <div class="field">
+          <label>Activity</label>
+          <select id="activity">
+            <option value="everyday">Everyday</option>
+            <option value="work">Work / formal</option>
+            <option value="exercise">Exercise</option>
+            <option value="outdoors">Outdoors</option>
           </select>
-        </label>
-
-        <label>
-          Activity
-          <select id="today-activity"></select>
-        </label>
-
-        <button id="recommend-button" type="button">Recommend outfit</button>
+        </div>
+        <button class="btn" id="recBtn">Recommend outfit</button>
+        <button class="btn ghost" id="quickSampleBtn" type="button">Load sample wardrobe</button>
       </div>
+      <div id="recResult"></div>
+    </div>
+  </section>
 
-      <div id="recommendation-output" class="result-box">
-        Add clothes, choose today’s conditions, then click recommend.
+  <!-- ============ WARDROBE ============ -->
+  <section id="tab-wardrobe" style="display:none">
+    <h2 class="section">My wardrobe <span id="count" class="muted"></span></h2>
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <div class="legend">
+        <span><span class="stamp high">High</span> evidence is solid</span>
+        <span><span class="stamp medium">Med</span> possible concern</span>
+        <span><span class="stamp low">Low</span> missing info</span>
       </div>
-    </section>
+      <button class="btn" id="addBtn">+ Add clothing</button>
+    </div>
+    <div class="grid" id="grid" style="margin-top:14px"></div>
+  </section>
 
-    <section class="card wide">
-      <div class="section-title-row">
-        <h2>Wardrobe</h2>
-        <button id="reset-button" type="button" class="secondary-button">Reset sample data</button>
+  <!-- ============ YOU & DATA ============ -->
+  <section id="tab-you" style="display:none">
+    <h2 class="section">Your skin sensitivities</h2>
+    <div class="panel">
+      <p class="muted" style="margin-top:0">Tick anything your skin reacts to. Matching items get a red <b>Avoid</b> flag that overrides the score — this is the personalization layer.</p>
+      <div class="checks" id="sensChecks"></div>
+    </div>
+
+    <h2 class="section">How the WearWell Score works</h2>
+    <div class="panel">
+      <p style="margin-top:0">The score (0–100) is an equal blend of three sub-scores. <b>Evidence confidence is shown separately</b> so a clean number never hides weak data.</p>
+      <div class="sciencegrid">
+        <div class="sci"><b>Comfort · physics + biology</b>Breathability and moisture-wicking. Ties to heat transfer (insulation traps air, lowering conduction) and thermoregulation (wicking keeps skin dry).</div>
+        <div class="sci"><b>Skin safety · biology + chemistry</b>Dyes, finishes and fibre irritation. Starts at 100 and drops for treatments, scaled by how strong the evidence is.</div>
+        <div class="sci"><b>Environment · climate</b>Durability, biodegradability and microplastic shedding. Wearing items more (cost-per-wear) raises their real-world value.</div>
       </div>
-      <div id="wardrobe-list" class="wardrobe-grid"></div>
-    </section>
-  </main>
+    </div>
 
-  <script src="js/data.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/scoring.js"></script>
-  <script src="js/recommendation.js"></script>
-  <script src="js/app.js"></script>
+    <h2 class="section">Save / load (works with no internet)</h2>
+    <div class="panel">
+      <p class="muted" style="margin-top:0">School machines often block storage. The export file is your real save — keep it on a USB drive or your account.</p>
+      <div id="storageDetail" style="font-size:13px;display:flex;flex-direction:column;gap:5px;margin-bottom:14px"></div>
+      <div class="row">
+        <button class="btn" id="exportBtn">Export to file</button>
+        <button class="btn ghost" id="importBtn">Import from file</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+        <button class="btn ghost" id="seedBtn">Load sample wardrobe</button>
+        <button class="btn danger" id="clearBtn">Clear everything</button>
+      </div>
+      <p class="muted" id="storeStatus" style="font-size:12px;margin-bottom:0"></p>
+    </div>
+  </section>
+</div>
+
+<!-- ============ ADD / EDIT MODAL ============ -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3 id="modalTitle">Add clothing</h3>
+    <p class="muted" style="margin-top:2px;font-size:13px">Blends are supported — add each fibre and its percentage.</p>
+    <div class="mrow row">
+      <div class="field" style="flex:1"><label>Name</label><input id="mName" placeholder="e.g. Navy linen shirt"></div>
+      <div class="field"><label>Category</label>
+        <select id="mCat">
+          <option value="top">Top</option><option value="bottom">Bottom</option>
+          <option value="outer">Outer layer</option><option value="footwear">Footwear</option>
+          <option value="accessory">Accessory</option>
+        </select>
+      </div>
+    </div>
+    <div class="mrow">
+      <label class="field" style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);font-weight:700">Materials</label>
+      <div id="matRows"></div>
+      <button class="btn ghost sm" id="addMatBtn" type="button">+ material</button>
+    </div>
+    <div class="mrow">
+      <label style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);font-weight:700">Chemical treatments (process, not fibre)</label>
+      <div class="checks" id="treatChecks"></div>
+    </div>
+    <div class="mrow row">
+      <div class="field"><label>Style</label>
+        <select id="mStyle"><option value="casual">Casual</option><option value="smart">Smart</option><option value="sporty">Sporty</option></select>
+      </div>
+      <div class="field"><label>Colour</label><input type="color" id="mColor" value="#3a4a63" style="width:60px;padding:3px;height:38px"></div>
+      <div class="field"><label>Price (optional)</label><input type="number" id="mPrice" placeholder="0" style="width:90px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelBtn" type="button">Cancel</button>
+      <button class="btn" id="saveItemBtn" type="button">Save item</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   SmartWardrobe — single file, no server, no internet.
+   Storage is localStorage with try/catch; the real save is
+   the JSON export/import on the "You & Data" tab.
+   ============================================================ */
+
+/* ---------- Material database (honest example data) ---------- */
+const MATERIALS = {
+  cotton:    {name:"Cotton",        breath:80, insul:35, wick:30, wetPenalty:true,  durab:60, biodeg:95, micro:false, irritants:[],                evidence:"high",   note:"Breathable, biodegradable; gets cold and heavy when wet."},
+  linen:     {name:"Linen",         breath:95, insul:20, wick:55, wetPenalty:true,  durab:75, biodeg:95, micro:false, irritants:[],                evidence:"high",   note:"The best hot-weather fibre: very breathable and durable."},
+  wool:      {name:"Merino wool",   breath:65, insul:90, wick:75, wetPenalty:false, durab:70, biodeg:90, micro:false, irritants:["wool"],          evidence:"high",   note:"Warm even when damp and wicks well; can itch sensitive skin."},
+  polyester: {name:"Polyester",     breath:35, insul:45, wick:80, wetPenalty:false, durab:85, biodeg:10, micro:true,  irritants:["disperse-dye","synthetic"], evidence:"high", note:"Durable, engineered wicking; sheds microplastics, dyes can irritate."},
+  bamboo:    {name:"Bamboo viscose",breath:80, insul:35, wick:70, wetPenalty:true,  durab:45, biodeg:80, micro:false, irritants:[],                evidence:"medium", note:"Soft & plant-based, but heavily chemically processed (process, not fibre)."},
+  elastane:  {name:"Elastane",      breath:25, insul:30, wick:35, wetPenalty:false, durab:60, biodeg:5,  micro:true,  irritants:["elastane","synthetic"], evidence:"medium", note:"Adds stretch; low breathability and microplastics. Usually blended."},
+  nylon:     {name:"Nylon",         breath:30, insul:40, wick:65, wetPenalty:false, durab:90, biodeg:8,  micro:true,  irritants:["synthetic"],     evidence:"high",   note:"Tough and water-resistant; microplastics and low breathability."},
+  acrylic:   {name:"Acrylic",       breath:30, insul:70, wick:25, wetPenalty:false, durab:50, biodeg:8,  micro:true,  irritants:["synthetic"],     evidence:"medium", note:"Cheap wool substitute; sheds a lot of microplastics."},
+  unknown:   {name:"Unknown fibre", breath:50, insul:50, wick:50, wetPenalty:false, durab:50, biodeg:50, micro:false, irritants:[],                evidence:"low",    note:"No label info — everything about this item is low-confidence."}
+};
+
+/* ---------- Treatment database (chemistry / process layer) ---------- */
+const TREATMENTS = {
+  wrinkle:   {name:"Wrinkle-resistant finish", tier:"possible", evidence:"medium", penalty:14, irritants:["formaldehyde"], note:"Easy-care finishes can use formaldehyde-releasing resins."},
+  water:     {name:"Water-repellent (DWR)",    tier:"possible", evidence:"medium", penalty:10, irritants:[],              note:"Older DWR coatings used PFAS 'forever chemicals'; newer ones vary."},
+  antimic:   {name:"Anti-odour / antimicrobial",tier:"possible", evidence:"medium", penalty:12, irritants:["synthetic"], note:"Often silver or triclosan-type agents; can affect sensitive skin."},
+  brightdye: {name:"Bright synthetic dye",     tier:"possible", evidence:"low",    penalty:8,  irritants:["disperse-dye"],note:"Disperse dyes are a confirmed contact allergen for some people."},
+  none:      {name:"Untreated / natural",      tier:"low",      evidence:"high",   penalty:0,  irritants:[],              note:"No added chemical finishes declared."}
+};
+
+/* ---------- Sensitivity options ---------- */
+const SENSITIVITIES = {
+  wool:"Wool / lanolin", formaldehyde:"Formaldehyde finishes",
+  "disperse-dye":"Synthetic dyes", elastane:"Elastane / latex",
+  synthetic:"Synthetic fibres (general)"
+};
+
+const CAT_ICON = {top:"👕",bottom:"👖",outer:"🧥",footwear:"👟",accessory:"🧣"};
+
+/* ---------- State ---------- */
+let state = {items:[], profile:{sens:[], unit:"C"}};
+let editingId = null;
+const KEY = "smartwardrobe_v1";
+
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); setStore("Saved in this browser."); }
+  catch(e){ setStore("Browser storage is blocked here — use Export to file to keep your wardrobe."); }
+}
+function load(){
+  try{ const r = localStorage.getItem(KEY); if(r){ state = JSON.parse(r); } }
+  catch(e){ /* in-memory only */ }
+}
+function setStore(msg){ const s=document.getElementById("storeStatus"); if(s) s.textContent = msg; }
+
+/* ---------- Storage diagnostic: tells you what THIS browser/laptop allows ---------- */
+function checkStorage(){
+  let ls=false;
+  try{
+    localStorage.setItem("__sw_test","1");
+    ls = localStorage.getItem("__sw_test")==="1";
+    localStorage.removeItem("__sw_test");
+  }catch(e){ ls=false; }
+  const fsa = (typeof window.showSaveFilePicker === "function");
+  return {ls, fsa};
+}
+function applyStorageInfo(){
+  const {ls, fsa} = checkStorage();
+  const badge = document.getElementById("storageBadge");
+  if(ls){ badge.textContent="autosave on"; badge.className="badge ok"; }
+  else { badge.textContent="autosave off — use Export"; badge.className="badge warn"; }
+
+  const lines = [];
+  if(ls){
+    lines.push("✅ <b>Autosave (localStorage):</b> working right now. To be sure it survives, add an item, fully close the browser, reopen this file, and check it's still there — some school profiles reset on logout even when it works mid-session.");
+  } else {
+    lines.push("❌ <b>Autosave (localStorage):</b> blocked on this browser/profile. Nothing is kept automatically — export before you close the tab, every time.");
+  }
+  lines.push((fsa?"➖":"➖")+" <b>Direct file-save (Chrome/Edge feature):</b> "+(fsa?"supported by this browser, but this app doesn't use it — Export/Import is more reliable across school setups.":"not supported in this browser — not needed, Export/Import covers it."));
+  lines.push("✅ <b>File download (Export button):</b> this is the one that almost never gets blocked, even on locked-down laptops. Treat it as your real save.");
+  document.getElementById("storageDetail").innerHTML = lines.map(l=>`<div>${l}</div>`).join("");
+}
+
+/* ============================================================
+   SCORING
+   ============================================================ */
+function blended(item, prop){
+  let total=0, w=0;
+  item.materials.forEach(m=>{ const mat=MATERIALS[m.key]; if(!mat) return; total += mat[prop]*m.pct; w += m.pct; });
+  return w ? total/w : 50;
+}
+function itemIrritants(item){
+  const set = new Set();
+  item.materials.forEach(m=>{ (MATERIALS[m.key]?.irritants||[]).forEach(x=>set.add(x)); });
+  (item.treatments||[]).forEach(t=>{ (TREATMENTS[t]?.irritants||[]).forEach(x=>set.add(x)); });
+  return set;
+}
+function matchedSensitivity(item){
+  const irr = itemIrritants(item);
+  return state.profile.sens.filter(s=>irr.has(s));
+}
+function scoreItem(item){
+  // Comfort (physics + biology): breathability + wicking
+  const breath = blended(item,"breath"), wick = blended(item,"wick"), insul = blended(item,"insul");
+  const comfort = Math.round(breath*0.5 + wick*0.5);
+
+  // Skin safety (biology + chemistry)
+  let skin = 100;
+  // wool fibre mild general irritation
+  if(item.materials.some(m=>m.key==="wool")) skin -= 8;
+  (item.treatments||[]).forEach(t=>{ skin -= (TREATMENTS[t]?.penalty||0); });
+  skin = Math.max(0, Math.round(skin));
+
+  // Environment (climate)
+  const durab = blended(item,"durab"), biodeg = blended(item,"biodeg");
+  const micro = item.materials.some(m=>MATERIALS[m.key]?.micro);
+  const env = Math.round(durab*0.4 + biodeg*0.4 + (micro?0:100)*0.2);
+
+  let overall = Math.round(comfort*0.34 + skin*0.33 + env*0.33);
+
+  // Evidence confidence (shown separately)
+  let conf = "high";
+  if(item.materials.some(m=>MATERIALS[m.key]?.evidence==="low")) conf="low";
+  else if(item.materials.some(m=>MATERIALS[m.key]?.evidence==="medium")
+         || (item.treatments||[]).some(t=>TREATMENTS[t]?.evidence!=="high")) conf="medium";
+
+  // Personalization hard flag
+  const matched = matchedSensitivity(item);
+  const avoid = matched.length>0;
+  if(avoid) overall = Math.min(overall, 25);
+
+  return {overall, comfort, skin, env, conf, avoid, matched, breath, wick, insul, durab, micro, biodeg};
+}
+
+/* ============================================================
+   RECOMMENDATION
+   ============================================================ */
+function toC(v){ return state.profile.unit==="F" ? (v-32)*5/9 : v; }
+
+function neededWarmth(tempC){
+  // map temperature to how much insulation we want (0..100)
+  if(tempC<=-5) return 100;
+  if(tempC>=32) return 0;
+  return Math.round(100 - (tempC+5)/37*100);
+}
+
+function contextScore(item, ctx){
+  const sc = scoreItem(item);
+  if(sc.avoid) return {fit:-1, sc, reasons:["matches a sensitivity — excluded"]};
+
+  let effWarmth = sc.insul;
+  if((ctx.cond==="rain"||ctx.cond==="snow") && item.materials.some(m=>MATERIALS[m.key]?.wetPenalty)) effWarmth *= 0.6;
+
+  // warmth match
+  const warmthFit = 100 - Math.min(100, Math.abs(ctx.need - effWarmth));
+
+  // heat comfort matters when hot
+  let heat = 60;
+  if(ctx.tempC>=24 || ctx.cond==="humid") heat = sc.breath*0.6 + sc.wick*0.4;
+
+  // activity weighting
+  let activityFit = 70;
+  if(ctx.activity==="exercise") activityFit = sc.wick*0.6 + sc.breath*0.4;
+  if(ctx.activity==="outdoors" && ctx.need>55) activityFit = effWarmth; // value warmth outdoors
+
+  // style match
+  const styleWant = {everyday:"casual", work:"smart", exercise:"sporty", outdoors:"casual"}[ctx.activity];
+  const styleFit = item.style===styleWant ? 100 : (item.style==="smart"&&ctx.activity==="exercise" ? 30 : 65);
+
+  // variety (past choices): nudge toward under-worn items, away from just-worn ones
+  let variety = 70;
+  if(item.lastWorn){
+    const days = (ctx.now - item.lastWorn)/86400000;
+    variety = days<2 ? 25 : days<5 ? 60 : 90;
+  } else variety = 95;
+
+  const fit = Math.round(
+    warmthFit*0.38 + heat*0.15 + activityFit*0.17 +
+    sc.overall*0.15 + styleFit*0.08 + variety*0.07
+  );
+  return {fit, sc, warmthFit:Math.round(warmthFit), effWarmth:Math.round(effWarmth), styleFit, variety};
+}
+
+function recommend(){
+  if(!state.items.length){ document.getElementById("recResult").innerHTML =
+    '<div class="empty">Add some clothes first, or click <b>Load sample wardrobe</b> to start a quick demo.</div>'; return; }
+
+  const tempC = toC(parseFloat(document.getElementById("temp").value)||0);
+  const cond = document.getElementById("cond").value;
+  const activity = document.getElementById("activity").value;
+  const ctx = {tempC, cond, activity, need:neededWarmth(tempC), now:Date.now()};
+
+  // slots needed
+  const slots = ["top","bottom","footwear"];
+  if(ctx.need>=55 || cond==="snow" || activity==="outdoors") slots.push("outer");
+  if(ctx.need>=75) slots.push("accessory");
+
+  const scored = state.items.map(it=>({it, r:contextScore(it, ctx)}));
+  const avoided = scored.filter(s=>s.r.sc.avoid);
+
+  const picks = {};
+  slots.forEach(cat=>{
+    const best = scored.filter(s=>s.it.category===cat && !s.r.sc.avoid)
+                       .sort((a,b)=>b.r.fit-a.r.fit)[0];
+    if(best) picks[cat]=best;
+  });
+
+  // build UI
+  let html = '<div class="outfit">';
+  let any=false;
+  slots.forEach(cat=>{
+    const p = picks[cat];
+    if(p){
+      any=true;
+      html += `<div class="slot">
+        <div class="ic">${CAT_ICON[cat]}</div>
+        <div><div class="slot-cat">${cat}</div><div class="slot-name">${esc(p.it.name)}</div></div>
+        <div class="slot-score">${p.r.fit}<small style="font-size:10px;color:var(--ink-soft)"> fit</small></div>
+      </div>`;
+    } else {
+      html += `<div class="slot" style="opacity:.6">
+        <div class="ic">${CAT_ICON[cat]}</div>
+        <div><div class="slot-cat">${cat}</div><div class="slot-name muted">Nothing suitable — add a ${cat}</div></div>
+      </div>`;
+    }
+  });
+  html += '</div>';
+
+  // WHY panel — the science explanation
+  const condLabel = {dry:"dry",rain:"rain",snow:"cold and wet",wind:"windy",humid:"hot and humid"}[cond];
+  const tShown = Math.round(parseFloat(document.getElementById("temp").value)||0);
+  html += '<div class="why"><h4>Why this outfit</h4><ul>';
+  html += `<li><b>Heat transfer (physics):</b> at ${tShown}°${state.profile.unit} I'm targeting an insulation level of about ${ctx.need}/100. ${ctx.need>60?"More trapped air means less heat conducted away from your body.":ctx.need<25?"Low insulation lets body heat escape so you don't overheat.":"A moderate layer balances warmth and ventilation."}</li>`;
+  if(cond==="rain"||cond==="snow") html += `<li><b>Thermoregulation (biology):</b> it's ${condLabel}, so fibres that go cold when wet (cotton, linen, bamboo) were down-weighted in favour of ones that stay warm and wick moisture.</li>`;
+  if(activity==="exercise") html += `<li><b>Comfort (biology):</b> for exercise, moisture-wicking was weighted highest so sweat moves off the skin and you stay dry.</li>`;
+  if(ctx.tempC>=24||cond==="humid") html += `<li><b>Cooling (physics):</b> breathability was prioritised so air moves through the fabric and carries heat away.</li>`;
+  // pick the lead item to explain its score
+  const lead = picks.top || picks.outer || Object.values(picks)[0];
+  if(lead){
+    html += `<li><b>WearWell (chemistry + climate):</b> ${esc(lead.it.name)} scores ${lead.r.sc.overall}/100 — comfort ${lead.r.sc.comfort}, skin safety ${lead.r.sc.skin}, environment ${lead.r.sc.env} (${lead.r.sc.conf} confidence).</li>`;
+  }
+  // variety / climate nudge
+  const fresh = Object.values(picks).filter(p=>!p.it.lastWorn);
+  if(fresh.length) html += `<li><b>Reducing waste (climate):</b> this includes ${fresh.length} item${fresh.length>1?"s":""} you haven't worn yet — rotating your whole wardrobe lowers cost-per-wear and waste.</li>`;
+  html += '</ul>';
+  if(avoided.length){
+    html += '<div class="avoided" style="margin-top:8px"><b>Excluded for your skin:</b> ' +
+      avoided.map(a=>esc(a.it.name)).join(", ") + '.</div>';
+  }
+  html += '</div>';
+
+  // wear button
+  if(any){
+    html += `<div style="margin-top:12px"><button class="btn" id="woreBtn">I wore this outfit</button>
+      <span class="muted" style="font-size:12px;margin-left:8px">Logs today on each item (for cost-per-wear &amp; rotation).</span></div>`;
+  }
+
+  document.getElementById("recResult").innerHTML = html;
+  if(any){
+    document.getElementById("woreBtn").onclick = ()=>{
+      Object.values(picks).forEach(p=>{ p.it.timesWorn=(p.it.timesWorn||0)+1; p.it.lastWorn=Date.now(); });
+      save(); toast("Outfit logged on "+Object.keys(picks).length+" items"); recommend();
+    };
+  }
+}
+
+/* ============================================================
+   WARDROBE RENDER
+   ============================================================ */
+function renderWardrobe(){
+  const grid = document.getElementById("grid");
+  document.getElementById("count").textContent = state.items.length ? "· "+state.items.length+" items" : "";
+  if(!state.items.length){
+    grid.innerHTML = '<div class="empty">Your wardrobe is empty.<br>Tap <b>+ Add clothing</b>, or load the sample wardrobe from the You &amp; Data tab.</div>';
+    return;
+  }
+  grid.innerHTML = state.items.map(it=>{
+    const s = scoreItem(it);
+    const matNames = it.materials.map(m=>`${m.pct}% ${MATERIALS[m.key]?.name||m.key}`).join(" · ");
+    const stamp = s.avoid ? '<span class="stamp avoid">⚠ Avoid</span>'
+      : `<span class="stamp ${s.conf}">${s.conf} confidence</span>`;
+    const cpw = it.price && it.timesWorn ? ` · $${(it.price/it.timesWorn).toFixed(2)}/wear` : "";
+    return `<div class="tag ${s.avoid?'flagged':''}">
+      <div class="punch"></div>
+      <div class="tag-top">
+        <span class="swatch" style="background:${it.color||'#ccc'}"></span>
+        <span class="ic">${CAT_ICON[it.category]}</span>
+        <div style="flex:1">
+          <div class="tag-name">${esc(it.name)}</div>
+          <div class="tag-meta">${esc(matNames)}</div>
+        </div>
+      </div>
+      <div class="score-line">
+        <div class="dial" style="color:${s.avoid?'var(--bad)':'var(--teal)'}">${s.overall}<small>/100</small></div>
+        <div class="bars">
+          ${bar("Comfort", s.comfort)}
+          ${bar("Skin", s.skin)}
+          ${bar("Planet", s.env)}
+        </div>
+      </div>
+      <div>${stamp}</div>
+      ${eviPanel(it, s)}
+      <div class="tag-foot">
+        <span class="worn">Worn ${it.timesWorn||0}×${cpw}</span>
+        <span style="margin-left:auto"></span>
+        <button class="btn ghost sm" onclick="wearItem('${it.id}')">Wore it</button>
+        <button class="btn ghost sm" onclick="editItem('${it.id}')">Edit</button>
+        <button class="btn danger sm" onclick="delItem('${it.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+function bar(label,val){
+  const col = val>=70?"var(--good)":val>=45?"var(--warn)":"var(--bad)";
+  return `<div class="bar"><span class="blab">${label}</span>
+    <span class="track"><span class="fill" style="width:${val}%;background:${col}"></span></span>
+    <span class="bval">${val}</span></div>`;
+}
+function eviPanel(it, s){
+  let rows = [];
+  if(s.matched.length) rows.push(`<li><span class="tier confirmed">PERSONAL:</span> contains ${s.matched.map(x=>SENSITIVITIES[x]).join(", ")} — you flagged this.</li>`);
+  it.materials.forEach(m=>{ const mat=MATERIALS[m.key]; if(mat) rows.push(`<li><span class="tier ${mat.evidence==='low'?'missing':mat.evidence==='medium'?'possible':'low'}">${mat.evidence.toUpperCase()}:</span> ${mat.name} — ${mat.note}</li>`); });
+  (it.treatments||[]).filter(t=>t!=="none").forEach(t=>{ const tr=TREATMENTS[t]; if(tr) rows.push(`<li><span class="tier ${tr.tier}">${tr.tier.toUpperCase()}:</span> ${tr.name} — ${tr.note}</li>`); });
+  if(s.micro) rows.push(`<li><span class="tier possible">CLIMATE:</span> sheds microplastics in the wash and is slow to biodegrade.</li>`);
+  if(!rows.length) rows.push("<li>No concerns on record.</li>");
+  return `<details class="evi"><summary>Why this score (evidence)</summary><ul class="evi-list">${rows.join("")}</ul></details>`;
+}
+
+/* item actions */
+function wearItem(id){ const it=find(id); it.timesWorn=(it.timesWorn||0)+1; it.lastWorn=Date.now(); save(); renderWardrobe(); toast("Logged a wear"); }
+function delItem(id){ if(confirm("Remove this item?")){ state.items=state.items.filter(x=>x.id!==id); save(); renderWardrobe(); } }
+function find(id){ return state.items.find(x=>x.id===id); }
+
+/* ============================================================
+   MODAL (add / edit)
+   ============================================================ */
+function openModal(item){
+  editingId = item ? item.id : null;
+  document.getElementById("modalTitle").textContent = item ? "Edit clothing" : "Add clothing";
+  document.getElementById("mName").value = item?.name || "";
+  document.getElementById("mCat").value = item?.category || "top";
+  document.getElementById("mStyle").value = item?.style || "casual";
+  document.getElementById("mColor").value = item?.color || "#3a4a63";
+  document.getElementById("mPrice").value = item?.price || "";
+  // materials
+  const rows = document.getElementById("matRows"); rows.innerHTML="";
+  const mats = item?.materials?.length ? item.materials : [{key:"cotton",pct:100}];
+  mats.forEach(m=>addMatRow(m.key,m.pct));
+  // treatments
+  const tc = document.getElementById("treatChecks");
+  tc.innerHTML = Object.entries(TREATMENTS).map(([k,t])=>{
+    const on = item ? (item.treatments||[]).includes(k) : (k==="none");
+    return `<label class="chk ${on?'on':''}"><input type="checkbox" value="${k}" ${on?'checked':''} onchange="this.closest('.chk').classList.toggle('on',this.checked)">${t.name}</label>`;
+  }).join("");
+  document.getElementById("modalBg").classList.add("open");
+}
+function addMatRow(key="cotton",pct=100){
+  const div=document.createElement("div"); div.className="mat-row";
+  div.innerHTML = `<select>${Object.entries(MATERIALS).map(([k,m])=>`<option value="${k}" ${k===key?'selected':''}>${m.name}</option>`).join("")}</select>
+    <input type="number" value="${pct}" min="0" max="100"> <span class="muted">%</span>
+    <button class="btn danger sm" type="button" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById("matRows").appendChild(div);
+}
+function closeModal(){ document.getElementById("modalBg").classList.remove("open"); }
+function editItem(id){ switchTab("wardrobe"); openModal(find(id)); }
+function saveItem(){
+  const name = document.getElementById("mName").value.trim();
+  if(!name){ toast("Give it a name"); return; }
+  const materials = [...document.querySelectorAll("#matRows .mat-row")].map(r=>({
+    key:r.querySelector("select").value, pct:parseFloat(r.querySelector("input").value)||0
+  })).filter(m=>m.pct>0);
+  if(!materials.length){ toast("Add at least one material"); return; }
+  const treatments = [...document.querySelectorAll("#treatChecks input:checked")].map(c=>c.value);
+  const data = {
+    name, category:document.getElementById("mCat").value,
+    materials, treatments,
+    style:document.getElementById("mStyle").value,
+    color:document.getElementById("mColor").value,
+    price:parseFloat(document.getElementById("mPrice").value)||0
+  };
+  if(editingId){ Object.assign(find(editingId), data); }
+  else { data.id="i"+Date.now()+Math.random().toString(36).slice(2,6); data.timesWorn=0; data.lastWorn=null; state.items.push(data); }
+  save(); closeModal(); renderWardrobe(); toast("Saved");
+}
+
+/* ============================================================
+   PROFILE / DATA
+   ============================================================ */
+function renderSens(){
+  document.getElementById("sensChecks").innerHTML = Object.entries(SENSITIVITIES).map(([k,v])=>{
+    const on = state.profile.sens.includes(k);
+    return `<label class="chk ${on?'on':''}"><input type="checkbox" value="${k}" ${on?'checked':''}>${v}</label>`;
+  }).join("");
+  document.querySelectorAll("#sensChecks input").forEach(c=>c.onchange=()=>{
+    state.profile.sens = [...document.querySelectorAll("#sensChecks input:checked")].map(x=>x.value);
+    c.closest(".chk").classList.toggle("on",c.checked);
+    save(); renderWardrobe();
+  });
+}
+function exportData(){
+  const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="smartwardrobe-backup.json"; a.click(); URL.revokeObjectURL(a.href);
+  toast("Exported");
+}
+function importData(file){
+  const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(d.items){ state=d; if(!state.profile) state.profile={sens:[],unit:"C"}; save(); refreshAll(); toast("Imported "+state.items.length+" items"); } else toast("That file isn't a wardrobe backup"); }
+    catch(e){ toast("Could not read that file"); } };
+  r.readAsText(file);
+}
+function makeSampleItems(){
+  return SAMPLE.map(s=>({...s, id:"i"+Math.random().toString(36).slice(2,9)}));
+}
+function loadSample(){
+  state.items = makeSampleItems();
+  save(); refreshAll(); switchTab("wardrobe"); toast("Sample wardrobe loaded");
+}
+function loadSampleForToday(){
+  state.items = makeSampleItems();
+  save(); refreshAll(); switchTab("today"); recommend(); toast("Sample wardrobe loaded");
+}
+const SAMPLE = [
+  {name:"White linen shirt", category:"top", materials:[{key:"linen",pct:100}], treatments:["none"], style:"smart", color:"#f4f1ea", price:45, timesWorn:6, lastWorn:Date.now()-9*86400000},
+  {name:"Merino base layer", category:"top", materials:[{key:"wool",pct:100}], treatments:["none"], style:"sporty", color:"#3b3b3b", price:70, timesWorn:20, lastWorn:Date.now()-1*86400000},
+  {name:"Cotton tee", category:"top", materials:[{key:"cotton",pct:100}], treatments:["none"], style:"casual", color:"#2e5e4e", price:15, timesWorn:0, lastWorn:null},
+  {name:"Easy-care work shirt", category:"top", materials:[{key:"cotton",pct:60},{key:"polyester",pct:40}], treatments:["wrinkle"], style:"smart", color:"#aebfd4", price:35, timesWorn:4, lastWorn:Date.now()-3*86400000},
+  {name:"Stretch gym leggings", category:"bottom", materials:[{key:"polyester",pct:80},{key:"elastane",pct:20}], treatments:["antimic"], style:"sporty", color:"#1a1a22", price:40, timesWorn:12, lastWorn:Date.now()-2*86400000},
+  {name:"Denim jeans", category:"bottom", materials:[{key:"cotton",pct:98},{key:"elastane",pct:2}], treatments:["none"], style:"casual", color:"#39506b", price:60, timesWorn:30, lastWorn:Date.now()-4*86400000},
+  {name:"Wool overcoat", category:"outer", materials:[{key:"wool",pct:80},{key:"nylon",pct:20}], treatments:["none"], style:"smart", color:"#43352a", price:160, timesWorn:8, lastWorn:Date.now()-15*86400000},
+  {name:"Rain shell", category:"outer", materials:[{key:"nylon",pct:100}], treatments:["water"], style:"casual", color:"#2c6e49", price:90, timesWorn:5, lastWorn:Date.now()-20*86400000},
+  {name:"Leather trainers", category:"footwear", materials:[{key:"cotton",pct:50},{key:"polyester",pct:50}], treatments:["none"], style:"casual", color:"#e8e4dc", price:75, timesWorn:18, lastWorn:Date.now()-2*86400000},
+  {name:"Wool scarf", category:"accessory", materials:[{key:"wool",pct:100}], treatments:["none"], style:"casual", color:"#7a3b2e", price:25, timesWorn:3, lastWorn:Date.now()-30*86400000}
+];
+
+/* ============================================================
+   PLUMBING
+   ============================================================ */
+function esc(s){ return (s||"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),1800); }
+function switchTab(tab){
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
+  ["today","wardrobe","you"].forEach(t=>document.getElementById("tab-"+t).style.display = t===tab?"block":"none");
+}
+function refreshAll(){ renderWardrobe(); renderSens(); document.querySelectorAll("#unitSeg button").forEach(b=>b.classList.toggle("on",b.dataset.u===state.profile.unit)); }
+
+/* events */
+document.getElementById("tabs").addEventListener("click",e=>{ if(e.target.dataset.tab) switchTab(e.target.dataset.tab); });
+document.getElementById("recBtn").onclick = recommend;
+document.getElementById("quickSampleBtn").onclick = loadSampleForToday;
+document.getElementById("addBtn").onclick = ()=>openModal(null);
+document.getElementById("addMatBtn").onclick = ()=>addMatRow();
+document.getElementById("saveItemBtn").onclick = saveItem;
+document.getElementById("cancelBtn").onclick = closeModal;
+document.getElementById("modalBg").addEventListener("click",e=>{ if(e.target.id==="modalBg") closeModal(); });
+document.getElementById("exportBtn").onclick = exportData;
+document.getElementById("importBtn").onclick = ()=>document.getElementById("importFile").click();
+document.getElementById("importFile").onchange = e=>{ if(e.target.files[0]) importData(e.target.files[0]); };
+document.getElementById("seedBtn").onclick = loadSample;
+document.getElementById("clearBtn").onclick = ()=>{ if(confirm("Delete the whole wardrobe?")){ state={items:[],profile:{sens:[],unit:state.profile.unit}}; save(); refreshAll(); } };
+document.getElementById("unitSeg").addEventListener("click",e=>{ if(e.target.dataset.u){ state.profile.unit=e.target.dataset.u; document.querySelectorAll("#unitSeg button").forEach(b=>b.classList.toggle("on",b.dataset.u===state.profile.unit)); save(); } });
+window.wearItem=wearItem; window.editItem=editItem; window.delItem=delItem; window.addMatRow=addMatRow;
+
+/* init */
+load();
+refreshAll();
+applyStorageInfo();
+recommend();
+</script>
 </body>
 </html>
