@@ -1,0 +1,184 @@
+:root {
+  --page-bg: #f5f7fb;
+  --card-bg: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #d1d5db;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --soft: #eef2ff;
+  --warning: #fff7ed;
+  --success: #ecfdf5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--page-bg);
+  color: var(--text);
+}
+
+.app-header {
+  padding: 28px 18px;
+  text-align: center;
+  background: var(--primary);
+  color: white;
+}
+
+.app-header h1 {
+  margin: 0 0 8px;
+}
+
+.app-header p {
+  margin: 0;
+}
+
+.layout {
+  width: min(1100px, 94vw);
+  margin: 24px auto;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 8px 22px rgba(31, 41, 55, 0.07);
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 11px 14px;
+  background: var(--primary);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--primary-dark);
+}
+
+.secondary-button {
+  background: #374151;
+}
+
+.secondary-button:hover {
+  background: #111827;
+}
+
+.result-box {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--soft);
+  line-height: 1.5;
+}
+
+.wardrobe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.item-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  background: white;
+}
+
+.item-card h3 {
+  margin: 0 0 6px;
+}
+
+.item-card p {
+  margin: 6px 0;
+  color: var(--muted);
+}
+
+.score {
+  display: inline-block;
+  margin: 8px 0;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--success);
+  font-weight: 700;
+}
+
+.warning-note {
+  background: var(--warning);
+  border-left: 4px solid #f97316;
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.section-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.outfit-list {
+  margin: 10px 0;
+  padding-left: 18px;
+}
+
+.small-button {
+  margin-top: 8px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 760px) {
+  .layout,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
